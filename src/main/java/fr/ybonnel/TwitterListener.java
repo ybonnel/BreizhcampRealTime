@@ -24,8 +24,10 @@ import twitter4j.Status;
 import twitter4j.StatusAdapter;
 import twitter4j.TwitterStream;
 import twitter4j.TwitterStreamFactory;
+import twitter4j.conf.PropertyConfiguration;
 
 import java.util.HashSet;
+import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executors;
@@ -33,19 +35,26 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.function.Consumer;
 import java.util.stream.Collectors;
+import java.util.stream.IntStream;
 
 public class TwitterListener extends StatusAdapter {
 
+
+    private final static Random random = new Random();
     private final String filter;
     private final Consumer<String> onShutdown;
     private final TwitterStream twitterStream;
     private final ScheduledExecutorService executor = Executors.newScheduledThreadPool(1);
     private ConcurrentLinkedQueue<TweetPhoto> tweetToSend = new ConcurrentLinkedQueue<>();
 
+    public static PropertyConfiguration getPropertyConfigurator() {
+        return new PropertyConfiguration(TwitterListener.class.getResourceAsStream("/twitter4j-" + (random.nextInt(3) + 1) + ".properties"));
+    }
+
     public TwitterListener(String filter, Consumer<String> onShutdown) {
         this.filter = filter;
         this.onShutdown = onShutdown;
-        twitterStream = new TwitterStreamFactory().getInstance();
+        twitterStream = new TwitterStreamFactory(getPropertyConfigurator()).getInstance();
         twitterStream.addListener(this);
         twitterStream.filter(new FilterQuery().track(new String[]{filter}));
         this.executor.scheduleAtFixedRate(() -> {
